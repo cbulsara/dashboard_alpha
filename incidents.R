@@ -13,6 +13,8 @@ df$assigned_to = parse_factor(df$assigned_to, levels = NULL)
 df$current_impact[is.na(df$current_impact)] <- 2
 df$future_impact[is.na(df$future_impact)] <- 1
 
+
+
 df$opened_at <- parse_datetime(df$opened_at, "%Y-%m-%d %H:%M:%S", locale = locale(tz="America/Los_Angeles"))
 df$resolved_at <- parse_datetime(df$resolved_at, "%Y-%m-%d %H:%M:%S", locale = locale(tz="America/Los_Angeles"))
 
@@ -20,6 +22,10 @@ df$resolved_at <- parse_datetime(df$resolved_at, "%Y-%m-%d %H:%M:%S", locale = l
 df <- mutate(df, hours = round(calendar_duration / 3600, 1), days = round(calendar_duration / 86400, 1))
 df <- mutate(df, opened_month = format(opened_at, "%b"))
 df <- mutate(df, resolved_month = format(resolved_at, "%b"))
+df$resolved_month <- parse_factor(df$resolved_month,
+            months,
+             ordered = TRUE,
+             include_na = TRUE)
 df <- mutate(df, resolved_year = format(resolved_at, "%Y"))
 
 #Create summaries
@@ -32,7 +38,8 @@ ytd_subs <- df %>%
   group_by(resolved_year, subcategory) %>% 
   summarize(incidents = n(), attch = round(mean(hours), 1), attcd = round(mean(days),1))
 
-tallyf = df %>% group_by(resolved_month) %>% tally
+df_tally = df %>% group_by(resolved_month) %>% tally
+
 #Graph it
 
 #basic stacked bar by month/category
@@ -51,6 +58,9 @@ gg_ytd_attc = ggplot(data = ytd_subs) +
   coord_flip() +
   scale_y_reverse()
 
+gg_ytd_tally = ggplot(data = df_tally, mapping = aes(x = resolved_month, y = n)) +
+  geom_point(mapping = aes(stat = 'identity'))
+  
 #stacked bar with trendlines for incident volume
 #remove method = 'lm' for less smoothyness
 #remove se = FALSE for error bar

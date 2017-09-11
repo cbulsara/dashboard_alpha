@@ -16,6 +16,7 @@ source("~/dashboard_alpha/tasks.R")
 source("~/dashboard_alpha/projects.R")
 source("~/dashboard_alpha/siem_logsources.R")
 source("~/dashboard_alpha/siem_offenses.R")
+source("~/dashboard_alpha/certfeed.R")
 
 ui <- dashboardPage(
   skin = 'green',
@@ -59,46 +60,59 @@ ui <- dashboardPage(
       )
     )
   ),
-  dashboardBody(tabItems(
+  dashboardBody(
+    tabItems(
+    
     #---------Shields Up
     tabItem(
-      tabName = 'shieldsup',
-      column(6, 
-       fluidRow(height = 250,
-           a(href = "http://isc.sans.org/",
-             target = "_blank", uiOutput("infocon")),
-           a(href = "http://www.symantec.com/security_response/threatcon/",
-             target = "_blank", uiOutput("threatcon"))#,
-           #a(href="http://webapp.iss.net/gtoc/",
-           #target="_blank", uiOutput("alertcon"))
-       ),
-       fluidRow(height = 250, HTML("<h2>Perimeter</h2>"),
-          uiOutput('twofaCoverage'),
-          uiOutput('perimeterIDS'),
-          uiOutput('perimeterIPS'),
-          uiOutput('emailFirewall')
-       ),
-       fluidRow(height = 250, HTML("<h2>Site Protection</h2>"),
-          uiOutput('La Jolla IDS/IPS'),
-          uiOutput('Green IDS/IPS'),
-          uiOutput('Encinitas IDS/IPS'),
-          uiOutput('Mercy IDS/IPS'),
-          uiOutput('Chula IDS/IPS')
-       ),
-       fluidRow(height = 250, HTML("<h2>Incidents</h2>"),
-          plotOutput("incidentSummary")
-       )
-      )
+      tabName = 'shieldsup', style = "background-color:#333c4c;",
+        column(8, 
+         fluidRow(height = 250, style = "background-color:#333c4c;", HTML("<h2><b><font color = 'white'>External Threat Level</font></b></h2>"),
+             a(href = "http://isc.sans.org/",
+               target = "_blank", uiOutput("infocon")),
+             a(href = "http://www.symantec.com/security_response/threatcon/",
+               target = "_blank", uiOutput("threatcon"))#,
+             #a(href="http://webapp.iss.net/gtoc/",
+             #target="_blank", uiOutput("alertcon"))
+         ),
+         fluidRow(height = 250, style = "background-color:#333c4c;", HTML("<h2><b><font color = 'white'>Perimeter KPIs</font></b></h2>"),
+            uiOutput('twofaCoverage'),
+            uiOutput('perimeterIDS'),
+            uiOutput('perimeterIPS'),
+            uiOutput('emailFirewall')
+         ),
+         fluidRow(height = 250, style = "background-color:#333c4c;", HTML("<h2><b><font color = 'white'>Site Protection KPIs</font></b></h2>"),
+            uiOutput('ljIDSIPS'),
+            uiOutput('greenIDSIPS'),
+            uiOutput('encinitasIDS/IPS'),
+            uiOutput('mercyIDSIPS'),
+            uiOutput('chulaIDSIPS'),
+            uiOutput('cpIDSIPS')
+         ),
+         fluidRow(height = 250, style = "background-color:#333c4c;", HTML("<h2><b><font color = 'white'>Endpoint Protection KPIs</font></b></h2>"),
+            uiOutput('protectedPercent_1'),
+            uiOutput('osCompliance_1'),
+            renderSparkline(spkchr_Protected)
+         ),
+         fluidRow(height = 150, style = "background-color:#333c4c;", HTML("<h2><b><font color = 'white'>Incident Metrics</font></b></h2>"),
+            box(plotOutput("incidentSummary", height = "150px"), width = 8)
+         )
+        ),
+        column(4, style = "background-color:#333c4c;",
+          fluidRow(height = 1150, style = "background-color:#333c4c;", HTML("<h2><b><font color = 'white'>Recent Threat Intel</font></b></h2>"),
+            DT::dataTableOutput('certfeedDT')
+          )
+        )
     ),
     #----------Security Operations
     tabItem(
       tabName = 'secops',
-      fluidRow(height = 250,
+      fluidRow(height = 250, style = "background-color:#333c4c;", HTML("<h2><b><font color = 'white'>KPIs</font></b></h2>"),
                column(6,
                       uiOutput('attcPhishingTask')),
                column(6,
                       uiOutput('attcMalwareTask'))),
-      fluidRow(height = 250,
+      fluidRow(height = 250, style = "background-color:#333c4c;", HTML("<h2><b><font color = 'white'>Metrics</font></b></h2>"),
                box(plotOutput("secopsYTDSummary")),
                box(plotOutput("secopsYTDATTC")))
     ),
@@ -107,14 +121,15 @@ ui <- dashboardPage(
     tabItem(
       tabName = 'sep',
       fluidRow(
-        height = 250,
-        uiOutput('protectedPercent'),
+        height = 250, style = "background-color:#333c4c;", HTML("<h2><b><font color = 'white'>KPIs</font></b></h2>"),
+        uiOutput('protectedPercent_2'),
+        uiOutput('osCompliance_2'),
         renderSparkline(spkchr_Protected)
       ),
-      fluidRow(height = 250,
+      fluidRow(height = 250, style = "background-color:#333c4c;", HTML("<h2><b><font color = 'white'>Metrics</font></b></h2>"),
                box(plotOutput("sepProtected")),
                box(plotOutput("sepOS"))),
-      fluidRow(height = 250,
+      fluidRow(height = 250, style = "background-color:#333c4c;",
                box(plotOutput("sepScanCompliant")),
                box(plotOutput(
                  "sepPatternCompliant"
@@ -125,7 +140,7 @@ ui <- dashboardPage(
     tabItem(
       tabName = 'siem',
       fluidRow(
-        height = 250,
+        height = 250, style = "background-color:#333c4c;", HTML("<h2><b><font color = 'white'>KPIs</font></b></h2>"),
         uiOutput("errorPercent"),
         uiOutput("offenseToSIRT"),
         uiOutput("logsourceEP")
@@ -134,7 +149,8 @@ ui <- dashboardPage(
     
     #----------Projects
     tabItem(tabName = 'projects',
-            fluidRow(column(
+            fluidRow(
+              column(
               6,
               tabsetPanel(
                 id = 'tb',
@@ -228,9 +244,13 @@ server <- function(input, output) {
     dt_ra
     #df_projects %>% filter(df_projects$type == 'Risk Assessment')
   })
+  output$certfeedDT <- DT::renderDataTable({
+    dt_CERT
+    #df_projects %>% filter(df_projects$type == 'Risk Assessment')
+  })
   output$errorPercent <- renderUI({
     valueBox(
-      value = percent(kpi_LogSourceErrorPercent),
+      value = scales::percent(kpi_LogSourceErrorPercent),
       subtitle = 'Percentage of Log Sources in "Error" Status',
       icon = icon('tachometer'),
       color = kpi_LogSourceErrorPercentColor
@@ -238,7 +258,7 @@ server <- function(input, output) {
   })
   output$logsourceEP <- renderUI({
     valueBox(
-      value = percent(kpi_EPPercent),
+      value = scales::percent(kpi_EPPercent),
       subtitle = 'Percentage of Events to EP',
       icon = icon('tachometer'),
       color = kpi_EPPercentColor
@@ -289,7 +309,7 @@ server <- function(input, output) {
       color = 'black'
     )
   })
-  output$protectedPercent <- renderUI({
+  output$protectedPercent_1 <- renderUI({
     infoBox(
       title = HTML(paste(
         '<b>% Endpoints', 'Protected</b>', sep = '<br/>'
@@ -298,6 +318,45 @@ server <- function(input, output) {
       subtitle = spkchr_Protected,
       icon = icon('tachometer'),
       color = 'yellow',
+      fill = TRUE,
+      width = 4
+    )
+  })
+  output$osCompliance_1 <- renderUI({
+    infoBox(
+      title = HTML(paste(
+        '<b># Endpoints with', 'Non-Compliant OS</b>', sep = '<br/>'
+      )),
+      value = kpi_os_compliant,
+      subtitle = spkchr_OS,
+      icon = icon('tachometer'),
+      color = 'red',
+      fill = TRUE,
+      width = 4
+    )
+  })
+  output$protectedPercent_2 <- renderUI({
+    infoBox(
+      title = HTML(paste(
+        '<b>% Endpoints', 'Protected</b>', sep = '<br/>'
+      )),
+      value = kpi_protected_percent,
+      subtitle = spkchr_Protected,
+      icon = icon('tachometer'),
+      color = 'yellow',
+      fill = TRUE,
+      width = 2
+    )
+  })
+  output$osCompliance_2 <- renderUI({
+    infoBox(
+      title = HTML(paste(
+        '<b># Endpoints with', 'Non-Compliante OS</b>', sep = '<br/>'
+      )),
+      value = kpi_os_compliant,
+      subtitle = spkchr_OS,
+      icon = icon('tachometer'),
+      color = 'red',
       fill = TRUE,
       width = 2
     )
@@ -327,6 +386,90 @@ server <- function(input, output) {
       subtitle = 'E-mail Firewall Effectiveness',
       icon = icon('warning'),
       color = 'yellow'
+    )
+  })
+  output$ljIDSIPS <- renderUI({
+    kpi_percent <- scales::percent(
+      df_KPIIDSIPS %>% filter(kpi_name == 'La Jolla') %>% .$kpi_value)
+    
+    kpi_color <- df_KPIIDSIPS %>% filter(kpi_name == 'La Jolla') %>% .$kpi_color
+    
+    valueBox(
+      width = 2,
+      value = kpi_percent,
+      subtitle = 'La Jolla IDS/IPS Operational Effectiveness',
+      icon = icon('warning'),
+      color = kpi_color
+    )
+  })
+  output$greenIDSIPS <- renderUI({
+    kpi_percent <- scales::percent(
+      df_KPIIDSIPS %>% filter(kpi_name == 'Green') %>% .$kpi_value)
+    
+    kpi_color <- df_KPIIDSIPS %>% filter(kpi_name == 'Green') %>% .$kpi_color
+    
+    valueBox(
+      width = 2,
+      value = kpi_percent,
+      subtitle = 'Green IDS/IPS Operational Effectiveness',
+      icon = icon('warning'),
+      color = kpi_color
+    )
+  })
+  output$mercyIDSIPS <- renderUI({
+    kpi_percent <- scales::percent(
+      df_KPIIDSIPS %>% filter(kpi_name == 'Mercy') %>% .$kpi_value)
+    
+    kpi_color <- df_KPIIDSIPS %>% filter(kpi_name == 'Mercy') %>% .$kpi_color
+    
+    valueBox(
+      width = 2,
+      value = kpi_percent,
+      subtitle = 'Mercy IDS/IPS Operational Effectiveness',
+      icon = icon('warning'),
+      color = kpi_color
+    )
+  })
+  output$chulaIDSIPS <- renderUI({
+    kpi_percent <- scales::percent(
+      df_KPIIDSIPS %>% filter(kpi_name == 'Chula Vista') %>% .$kpi_value)
+    
+    kpi_color <- df_KPIIDSIPS %>% filter(kpi_name == 'Chula Vista') %>% .$kpi_color
+    
+    valueBox(
+      width = 2,
+      value = kpi_percent,
+      subtitle = 'Chula Vista IDS/IPS Operational Effectiveness',
+      icon = icon('warning'),
+      color = kpi_color
+    )
+  })
+  output$encinitasIDSIPS <- renderUI({
+    kpi_percent <- scales::percent(
+      df_KPIIDSIPS %>% filter(kpi_name == 'Encinitas') %>% .$kpi_value)
+    
+    kpi_color <- df_KPIIDSIPS %>% filter(kpi_name == 'Encinitas') %>% .$kpi_color
+    
+    valueBox(
+      width = 2,
+      value = kpi_percent,
+      subtitle = 'Encinitas IDS/IPS Operational Effectiveness',
+      icon = icon('warning'),
+      color = kpi_color
+    )
+  })
+  output$cpIDSIPS <- renderUI({
+    kpi_percent <- scales::percent(
+      df_KPIIDSIPS %>% filter(kpi_name == 'Campus Point') %>% .$kpi_value)
+    
+    kpi_color <- df_KPIIDSIPS %>% filter(kpi_name == 'Campus Point') %>% .$kpi_color
+    
+    valueBox(
+      width = 2,
+      value = kpi_percent,
+      subtitle = 'Campus Point IDS/IPS Operational Effectiveness',
+      icon = icon('warning'),
+      color = kpi_color
     )
   })
 }

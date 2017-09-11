@@ -167,6 +167,8 @@ df_OS_Compliant <- df %>%
   summarize(n = n()) %>%
   mutate(p = n / sum(n))
 
+df_OS_Compliant_False_N <- df_OS_Compliant %>% filter(c == TRUE) %>% .$n
+
 df_Scan_Compliant <-
   df %>% group_by(Measure_Date, Scan_Compliant) %>% summarize(n = n()) %>% mutate(p = n / sum(n))
 
@@ -181,7 +183,9 @@ kpi_protected_percent <-
       df_Protected$Measure_Date
     ))) %>% filter(KPI_Protected == TRUE) %>% .$p
   )
-
+ 
+kpi_os_compliant <- df_OS_Compliant %>% filter(c=='TRUE') %>% filter(Measure_Date == toString(max(
+  df_Protected$Measure_Date))) %>% .$n
 
 #------------PLOT DATA
 spk_Protected <-
@@ -204,6 +208,17 @@ spk_Protected <-
 spkchr_Protected <-
   spk_chr(
     round(df_Protected_True$p, 2),
+    type = 'line',
+    chartRangeMin = 0,
+    chartRangeMax = 1,
+    lineColor = 'lime',
+    fillColor = '#A9DCF6',
+    height = 25,
+    width = 100
+  )
+spkchr_OS <-
+  spk_chr(
+    df_OS_Compliant_False_N,
     type = 'line',
     chartRangeMin = 0,
     chartRangeMax = 1,
