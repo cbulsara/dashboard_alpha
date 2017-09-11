@@ -1,0 +1,336 @@
+library(shiny)
+library(shinydashboard)
+library(shinythemes)
+library(httr)
+library(jsonlite)
+library(dplyr)
+library(rvest)
+library(magrittr)
+library(tidyverse)
+library(stringr)
+library(DT)
+
+source("~/dashboard_alpha/sep.R")
+source("~/dashboard_alpha/incidents.R")
+source("~/dashboard_alpha/tasks.R")
+source("~/dashboard_alpha/projects.R")
+source("~/dashboard_alpha/siem_logsources.R")
+source("~/dashboard_alpha/siem_offenses.R")
+
+ui <- dashboardPage(
+  skin = 'green',
+  dashboardHeader(title = "InfoSec Dashboard Alpha"),
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem(
+        "Shields Up",
+        tabName = 'shieldsup',
+        icon = icon("dashboard"),
+        badgeLabel = 'WIP',
+        badgeColor = 'red'
+      ),
+      menuItem(
+        "Security Operations",
+        tabName = 'secops',
+        icon = icon("dashboard"),
+        badgeLabel = 'WIP',
+        badgeColor = 'red'
+      ),
+      menuItem(
+        "Endpoint Protection",
+        tabName = 'sep',
+        icon = icon("th"),
+        badgeLabel = 'WIP',
+        badgeColor = 'red'
+      ),
+      menuItem(
+        "SIEM",
+        tabName = 'siem',
+        icon = icon("truck"),
+        badgeLabel = 'WIP',
+        badgeColor = 'red'
+      ),
+      menuItem(
+        "Projects",
+        tabName = 'projects',
+        icon = icon("th"),
+        badgeLabel = 'WIP',
+        badgeColor = 'red'
+      )
+    )
+  ),
+  dashboardBody(tabItems(
+    #---------Shields Up
+    tabItem(
+      tabName = 'shieldsup',
+      column(6, 
+       fluidRow(height = 250,
+           a(href = "http://isc.sans.org/",
+             target = "_blank", uiOutput("infocon")),
+           a(href = "http://www.symantec.com/security_response/threatcon/",
+             target = "_blank", uiOutput("threatcon"))#,
+           #a(href="http://webapp.iss.net/gtoc/",
+           #target="_blank", uiOutput("alertcon"))
+       ),
+       fluidRow(height = 250, HTML("<h2>Perimeter</h2>"),
+          uiOutput('twofaCoverage'),
+          uiOutput('perimeterIDS'),
+          uiOutput('perimeterIPS'),
+          uiOutput('emailFirewall')
+       ),
+       fluidRow(height = 250, HTML("<h2>Site Protection</h2>"),
+          uiOutput('La Jolla IDS/IPS'),
+          uiOutput('Green IDS/IPS'),
+          uiOutput('Encinitas IDS/IPS'),
+          uiOutput('Mercy IDS/IPS'),
+          uiOutput('Chula IDS/IPS')
+       ),
+       fluidRow(height = 250, HTML("<h2>Incidents</h2>"),
+          plotOutput("incidentSummary")
+       )
+      )
+    ),
+    #----------Security Operations
+    tabItem(
+      tabName = 'secops',
+      fluidRow(height = 250,
+               column(6,
+                      uiOutput('attcPhishingTask')),
+               column(6,
+                      uiOutput('attcMalwareTask'))),
+      fluidRow(height = 250,
+               box(plotOutput("secopsYTDSummary")),
+               box(plotOutput("secopsYTDATTC")))
+    ),
+    
+    #----------Endpoint Protection
+    tabItem(
+      tabName = 'sep',
+      fluidRow(
+        height = 250,
+        uiOutput('protectedPercent'),
+        renderSparkline(spkchr_Protected)
+      ),
+      fluidRow(height = 250,
+               box(plotOutput("sepProtected")),
+               box(plotOutput("sepOS"))),
+      fluidRow(height = 250,
+               box(plotOutput("sepScanCompliant")),
+               box(plotOutput(
+                 "sepPatternCompliant"
+               )))
+    ),
+    
+    #----------SIEM
+    tabItem(
+      tabName = 'siem',
+      fluidRow(
+        height = 250,
+        uiOutput("errorPercent"),
+        uiOutput("offenseToSIRT"),
+        uiOutput("logsourceEP")
+      )
+    ),
+    
+    #----------Projects
+    tabItem(tabName = 'projects',
+            fluidRow(column(
+              6,
+              tabsetPanel(
+                id = 'tb',
+                tabPanel('Projects', DT::dataTableOutput('tab_projects')),
+                tabPanel('Risk Assessments', DT::dataTableOutput('tab_ra'))
+              )
+            )))
+  ))
+)
+
+# Define server logic required to draw plots
+server <- function(input, output) {
+  output$sepProtected <- renderPlot({
+    print(gg_Protected)
+  })
+  output$sepOS <- renderPlot({
+    print(gg_OS)
+  })
+  output$sepScanCompliant <- renderPlot({
+    print(gg_Scan_Compliant)
+  })
+  output$sepPatternCompliant <- renderPlot({
+    print(gg_Pattern_Compliant)
+  })
+  output$incidentSummary <- renderPlot({
+    print(gg_Summary)
+  })
+  output$infocon <- renderUI({
+    sans_url <- "https://isc.sans.edu/infocon.txt"
+    sans <-
+      read_html("https://isc.sans.edu/infocon.txt") %>% html_node("body") %>% html_text()
+    
+    valueBox(
+      value = toupper(sans),
+      subtitle = "SANS Infocon",
+      icon = icon("bullseye"),
+      color = sans
+    )
+    
+  })
+  output$threatcon <- renderUI({
+    pg <- read_html("http://www.symantec.com/security_response/#")
+    pg %>%
+      html_nodes("div.colContentThreatCon > a") %>%
+      html_text() -> threatcon_text
+    threatcon_text <- sapply(strsplit(threatcon_text, ":"), "[", 1)
+    
+    tcon_map <- c("green", "yellow", "orange", "red")
+    names(tcon_map) <-
+      c("Level 1", "Level 2", "Level 3", "Level 4")
+    threatcon_color <-
+      unname(tcon_map[gsub(":.*$", "", threatcon_text)])
+    
+    threatcon_text <- gsub("^.*:", "", threatcon_text)
+    
+    valueBox(
+      value = threatcon_text,
+      subtitle = "Symantec ThreatCon",
+      icon = icon("tachometer"),
+      color = threatcon_color
+    )
+    
+  })
+  
+  output$alertcon <- renderUI({
+    pg <- read_html("https://exchange.xforce.ibmcloud.com/")
+    pg %>%
+      html_nodes("#dashboard-header > div.alertcon > p > span") %>%
+      html_text() %>%
+      gsub(" -.*$", "", .) -> alertcon_text
+    
+    acon_map <- c("green", "blue", "yellow", "red")
+    names(acon_map) <-
+      c("AlertCon 1", "AlertCon 2", "AlertCon 3", "AlertCon 4")
+    alertcon_color <- unname(acon_map[alertcon_text])
+    
+    valueBox(
+      value = alertcon_text,
+      subtitle = "IBM X-Force",
+      icon = icon("warning"),
+      color = alertcon_color
+    )
+    
+  })
+  output$tab_projects <- DT::renderDataTable({
+    dt_projects
+    #df_projects %>% filter(df_projects$type == 'Project')
+  })
+  
+  output$tab_ra <- DT::renderDataTable({
+    dt_ra
+    #df_projects %>% filter(df_projects$type == 'Risk Assessment')
+  })
+  output$errorPercent <- renderUI({
+    valueBox(
+      value = percent(kpi_LogSourceErrorPercent),
+      subtitle = 'Percentage of Log Sources in "Error" Status',
+      icon = icon('tachometer'),
+      color = kpi_LogSourceErrorPercentColor
+    )
+  })
+  output$logsourceEP <- renderUI({
+    valueBox(
+      value = percent(kpi_EPPercent),
+      subtitle = 'Percentage of Events to EP',
+      icon = icon('tachometer'),
+      color = kpi_EPPercentColor
+    )
+  })
+  output$offenseToSIRT <- renderUI({
+    valueBox(
+      value = paste(kpi_SIEMOffenseToSirt, "%"),
+      subtitle = 'Percentage of Offenses that Result in SIRTs',
+      icon = icon('tachometer'),
+      color = kpi_SIEMOffenseToSirtColor
+    )
+  })
+  output$attcPhishingTask <- renderUI({
+    valueBox(
+      value = paste(
+        filter(tasks_Means, tasks_Means$type == 'phishing') %>% .$attch,
+        " Hours"
+      ),
+      subtitle = 'Average IS Reaction Time to Phishing',
+      icon = icon('tachometer'),
+      color = filter(tasks_Means, tasks_Means$type == 'phishing') %>% .$color
+    )
+  })
+  output$attcMalwareTask <- renderUI({
+    valueBox(
+      value = paste(
+        filter(tasks_Means, tasks_Means$type == 'malware') %>% .$attch,
+        " Hours"
+      ),
+      subtitle = 'Average IS Reaction Time to Malware',
+      icon = icon('tachometer'),
+      color = filter(tasks_Means, tasks_Means$type == 'malware') %>% .$color
+    )
+  })
+  output$secopsYTDSummary <- renderPlot({
+    print(gg_ytd_summary)
+  })
+  output$secopsYTDATTC <- renderPlot({
+    print(gg_ytd_attc)
+  })
+  output$twofaCoverage <- renderUI({
+    valueBox(
+      width = 3,
+      value = '20%',
+      subtitle = '% Entry Points Protected by 2FA',
+      icon = icon('warning'),
+      color = 'black'
+    )
+  })
+  output$protectedPercent <- renderUI({
+    infoBox(
+      title = HTML(paste(
+        '<b>% Endpoints', 'Protected</b>', sep = '<br/>'
+      )),
+      value = kpi_protected_percent,
+      subtitle = spkchr_Protected,
+      icon = icon('tachometer'),
+      color = 'yellow',
+      fill = TRUE,
+      width = 2
+    )
+  })
+  output$perimeterIDS <- renderUI({
+    valueBox(
+      width = 3,
+      value = '50%',
+      subtitle = 'Perimeter IDS Effectiveness',
+      icon = icon('warning'),
+      color = 'red'
+    )
+  })
+  output$perimeterIPS <- renderUI({
+    valueBox(
+      width = 3,
+      value = '0%',
+      subtitle = 'Perimeter IPS Effectiveness',
+      icon = icon('warning'),
+      color = 'black'
+    )
+  })
+  output$emailFirewall <- renderUI({
+    valueBox(
+      width = 3,
+      value = '70%',
+      subtitle = 'E-mail Firewall Effectiveness',
+      icon = icon('warning'),
+      color = 'yellow'
+    )
+  })
+}
+
+
+# Run the application
+shinyApp(ui = ui, server = server)
