@@ -178,11 +178,15 @@ df_Pattern_Compliant$Pattern_Compliant[is.na(df_Pattern_Compliant$Pattern_Compli
   FALSE
 
 kpi_protected_percent <-
-  percent(
     df_Protected %>% filter(Measure_Date == toString(max(
       df_Protected$Measure_Date
     ))) %>% filter(KPI_Protected == TRUE) %>% .$p
-  )
+
+kpi_protected_color <- 'black'
+kpi_protected_color <- ifelse(kpi_protected_percent >= 0.95, 'green', kpi_protected_color)
+kpi_protected_color <- ifelse(kpi_protected_percent < 0.95, 'yellow', kpi_protected_color)
+kpi_protected_color <- ifelse(kpi_protected_percent < 0.85, 'red', kpi_protected_color)
+kpi_protected_color <- ifelse(kpi_protected_percent < 0.5, 'black', kpi_protected_color)
  
 kpi_os_compliant <- df_OS_Compliant %>% filter(c=='TRUE') %>% filter(Measure_Date == toString(max(
   df_Protected$Measure_Date))) %>% .$n
@@ -212,7 +216,8 @@ spkchr_Protected <-
     chartRangeMin = 0,
     chartRangeMax = 1,
     lineColor = 'lime',
-    fillColor = '#A9DCF6',
+    lineWidth = 3,
+    fillColor = FALSE,
     height = 25,
     width = 100
   )
@@ -223,7 +228,8 @@ spkchr_OS <-
     chartRangeMin = 0,
     chartRangeMax = 1,
     lineColor = 'lime',
-    fillColor = '#A9DCF6',
+    lineWidth = 3,
+    fillColor = FALSE,
     height = 25,
     width = 100
   )
@@ -254,7 +260,6 @@ gg_OS <-
   ggplot(data = df_OS,
          mapping = aes(x = Measure_Date, y = n, fill = Operating_System)) +
   geom_bar(stat = 'identity') +
-  scale_fill_brewer() +
   labs(
     x = 'Observation Date',
     y = 'n',

@@ -36,6 +36,9 @@ df[cols_as_datetime] <-
   lapply(df[cols_as_datetime], function(x)
     parse_datetime(x, "%b %d, %Y, %I:%M %p", na = c('', 'NA')))
 
+#------------CREATE FIELDS
+
+
 #------------CREATE SUMMARIES & KPIs
 
 #Log source reporting in error
@@ -69,3 +72,60 @@ if (kpi_EPPercent < 0.9)   {
 if (kpi_EPPercent < 0.85)  {
   kpi_EPPercentColor <-  'red'
 }
+df_EP <- mutate(df_EP, destination = ifelse(Target_Destination == 'eventcollector0 :: carnivore', 'Console', 'Event Processor'))
+#------------PLOT DATA
+gg_SIEMError <-
+  ggplot(data = df_Error,
+         mapping = aes(x = Measure_Date, y = n, fill = Status)) +
+  geom_bar(position = 'fill', stat = 'identity') +
+  labs(
+    x = 'Observation Date',
+    y = 'n',
+    fill = 'Log Source Status',
+    title = 'SIEM Log Source Status',
+    subtitle = '"Success" = Reporting to SIEM'
+  ) +
+  geom_smooth(method = 'lm',
+              position = 'fill',
+              show.legend = FALSE)
+
+gg_SIEMEP <-
+  ggplot(data = df_EP,
+         mapping = aes(x = Measure_Date, y = sumeps, fill = destination)) +
+  geom_bar(position = 'fill', stat = 'identity') +
+  labs(
+    x = 'Observation Date',
+    y = 'EPS',
+    fill = 'Target Destination',
+    title = 'SIEM EPS Destination',
+    subtitle = '"Event Processor" is the Desired Destination'
+  ) +
+  geom_smooth(method = 'lm',
+              position = 'fill',
+              show.legend = FALSE)
+
+spkchr_SIEMError <-
+  spk_chr(
+    round(filter(df_Error, Status == 'Error') %>% .$p, 2),
+    type = 'line',
+    chartRangeMin = 0,
+    chartRangeMax = 1,
+    lineColor = 'lime',
+    lineWidth = 3,
+    fillColor = FALSE,
+    height = 25,
+    width = 100
+  )
+spkchr_SIEMEP <-
+  spk_chr(
+    round(filter(df_EP, destination == 'Console') %>% .$p, 2),
+    type = 'line',
+    chartRangeMin = 0,
+    chartRangeMax = 1,
+    lineColor = 'lime',
+    lineWidth = 3,
+    fillColor = FALSE,
+    height = 25,
+    width = 100
+  )
+
