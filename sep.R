@@ -46,14 +46,12 @@ cols_as_factor <- c(
   'Intrusion_Prevention_On',
   'IE_Browser_Protection_On',
   'Firefox_Browser_Protection_On',
-  'Early_Launch_Antimalware_On',
-  'found'
+  'Early_Launch_Antimalware_On'
 )
 
 #Columns to parse as dates.
 cols_as_date <- c('Measure_Date',
-                  'Pattern_Date',
-                  'Last_Scan_Time')
+                  'Pattern_Date')
 
 #------------READ FILES
 csv_in <-
@@ -87,6 +85,8 @@ df[cols_as_factor] <-
 #dates
 
 #Ingesting files parsed with my python parser right now. parse_datetime would make it easy to ingest direct from SEP
+df$Last_Scan_Time[df$Last_Scan_Time == 'Never'] <- '01/01/1970 00:00'
+df$Last_Scan_Time <- parse_date(df$Last_Scan_Time, '%m/%d/%Y %H:%M')
 df[cols_as_date] <-
   lapply(df[cols_as_date], function(x)
     parse_date(x, "%m/%d/%Y"))
@@ -104,8 +104,9 @@ df <- mutate(df, Scan_Age = Measure_Date - Last_Scan_Time)
 df <- mutate(df, Pattern_Age = Measure_Date - Pattern_Date)
 
 #In_CMDB returns True if the conditional field calculated by the python parse != left_only
-df <-
-  mutate(df, In_CMDB = ifelse(found != 'left_only', TRUE, FALSE))
+#DEPRECATED
+#df <-
+#  mutate(df, In_CMDB = ifelse(found != 'left_only', TRUE, FALSE))
 
 #KPI_Protected is True if desired protections are enabled and scan/pattern ages are < 6 days
 df <- mutate(
@@ -248,13 +249,8 @@ gg_Protected <-
     subtitle = 'Measured Weekly',
     fill = 'Protected (True/False)',
     linetype = 'Protection Trend'
-  ) +
-  geom_smooth(
-    method = 'lm',
-    position = 'fill',
-    se = FALSE,
-    show.legend = FALSE
-  )
+  ) 
+
 
 gg_OS <-
   ggplot(data = df_OS,
@@ -279,10 +275,7 @@ gg_Scan_Compliant <-
     fill = 'Scan Age Compliant',
     title = 'Scan Age Compliance',
     subtitle = 'Compliant = Last Scanned Within 5 Days'
-  ) +
-  geom_smooth(method = 'lm',
-              position = 'fill',
-              show.legend = FALSE)
+  ) 
 
 gg_Pattern_Compliant <-
   ggplot(data = df_Pattern_Compliant,
@@ -295,10 +288,4 @@ gg_Pattern_Compliant <-
     fill = 'Pattern Age Compliant',
     title = 'Pattern Age Compliance',
     subtitle = 'Compliant = Patterns Updated Within 5 Days'
-  ) +
-  geom_smooth(
-    method = 'lm',
-    position = 'fill',
-    se = FALSE,
-    show.legend = FALSE
-  )
+  ) 

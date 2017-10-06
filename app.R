@@ -17,6 +17,7 @@ source("~/dashboard_alpha/projects.R")
 source("~/dashboard_alpha/siem_logsources.R")
 source("~/dashboard_alpha/siem_offenses.R")
 source("~/dashboard_alpha/certfeed.R")
+source("~/dashboard_alpha/phishingsim.R")
 
 ui <- dashboardPage(
   skin = 'blue',
@@ -26,35 +27,42 @@ ui <- dashboardPage(
       menuItem(
         "Shields Up",
         tabName = 'shieldsup',
-        icon = icon("dashboard"),
+        icon = icon("umbrella"),
         badgeLabel = 'WIP',
         badgeColor = 'red'
       ),
       menuItem(
         "Security Operations",
         tabName = 'secops',
-        icon = icon("dashboard"),
+        icon = icon("shield"),
         badgeLabel = 'WIP',
         badgeColor = 'red'
       ),
       menuItem(
         "Endpoint Protection",
         tabName = 'sep',
-        icon = icon("th"),
+        icon = icon("laptop"),
         badgeLabel = 'WIP',
         badgeColor = 'red'
       ),
       menuItem(
         "SIEM",
         tabName = 'siem',
-        icon = icon("truck"),
+        icon = icon("eye"),
         badgeLabel = 'WIP',
         badgeColor = 'red'
       ),
       menuItem(
         "Projects",
         tabName = 'projects',
-        icon = icon("th"),
+        icon = icon("wrench"),
+        badgeLabel = 'WIP',
+        badgeColor = 'red'
+      ),
+      menuItem(
+        "Phishing Simulation",
+        tabName = 'phishing',
+        icon = icon("wrench"),
         badgeLabel = 'WIP',
         badgeColor = 'red'
       )
@@ -99,7 +107,7 @@ ui <- dashboardPage(
             box(plotOutput("incidentSummary", height = "150px"), width = 8)
          )
         ),
-        column(4, 
+        column(4, align = 'left',
           fluidRow(height = 1150,  HTML("<h2><b><font color = 'white'>Recent Threat Intel</font></b></h2>"),
             DT::dataTableOutput('certfeedDT')
           )
@@ -173,8 +181,21 @@ ui <- dashboardPage(
                 tabPanel('Projects', DT::dataTableOutput('tab_projects')),
                 tabPanel('Risk Assessments', DT::dataTableOutput('tab_ra'))), width = 12
               )
-            )))
-  ))
+            ))),
+    tabItem(tabName = 'phishing',
+            fluidRow(
+              column(6, 
+                     fluidRow(
+                       height = 250,  HTML("<h2><b><font color = 'white'>KPIs</font></b></h2>"),
+                       uiOutput("phishingCompliant")),
+                     fluidRow(
+                       height = 250,  HTML("<h2><b><font color = 'white'>Metrics</font></b></h2>"),
+                       plotOutput("plotPhishingMetrics"))
+                     )
+              )
+            )
+    )
+  )
 )
 
 # Define server logic required to draw plots
@@ -202,30 +223,31 @@ server <- function(input, output) {
     valueBox(
       value = toupper(sans),
       subtitle = "SANS Infocon",
-      icon = icon("bullseye"),
+      icon = icon("globe"),
       color = sans
     )
     
   })
   output$threatcon <- renderUI({
-    pg <- read_html("http://www.symantec.com/security_response/#")
+    pg <- read_html("http://www.symantec.com/security_response/threatcon")
     pg %>%
-      html_nodes("div.colContentThreatCon > a") %>%
+      html_nodes("div.bckSolidWht.bckPadLG > h3") %>%
       html_text() -> threatcon_text
-    threatcon_text <- sapply(strsplit(threatcon_text, ":"), "[", 1)
-    
+    threatcon_text <- sapply(strsplit(threatcon_text, ": "), "[", 2)
+  
     tcon_map <- c("green", "yellow", "orange", "red")
     names(tcon_map) <-
-      c("Level 1", "Level 2", "Level 3", "Level 4")
+      c("Normal.", "Elevated.", "High.", "Extreme.")
     threatcon_color <-
       unname(tcon_map[gsub(":.*$", "", threatcon_text)])
     
     threatcon_text <- gsub("^.*:", "", threatcon_text)
+    threatcon_text <- gsub("\\.", "", threatcon_text)
     
     valueBox(
       value = threatcon_text,
       subtitle = "Symantec ThreatCon",
-      icon = icon("tachometer"),
+      icon = icon("globe"),
       color = threatcon_color
     )
     
@@ -378,7 +400,7 @@ server <- function(input, output) {
   output$osCompliance_2 <- renderUI({
     infoBox(
       title = HTML(paste(
-        '<b># Endpoints with', 'Non-Compliante OS</b>', sep = '<br/>'
+        '<b># Endpoints with', 'Non-Compliant OS</b>', sep = '<br/>'
       )),
       value = kpi_os_compliant,
       subtitle = spkchr_OS,
@@ -486,6 +508,24 @@ server <- function(input, output) {
   })
   output$plotSIEMEP <- renderPlot({
     print(gg_SIEMEP)
+  })
+  output$phishingCompliant <- renderUI({
+    kpi_percent <- scales::percent(
+      df_phishing_kpi_compliant %>% filter(compliant == 'TRUE') %>% .$p %>% round(2))
+
+    
+    kpi_color <-  df_phishing_kpi_compliant %>% filter(compliant == 'TRUE') %>% .$kpi_color
+    
+    valueBox(
+      width = 2,
+      value = kpi_percent,
+      subtitle = 'Phishing Simulation User Compliance',
+      icon = icon('warning'),
+      color = kpi_color
+    )
+  })
+  output$plotPhishingMetrics <- renderPlot({
+    print(gg_phishing_metrics)
   })
 }
 

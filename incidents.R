@@ -1,5 +1,6 @@
 #Load libraries
 library('tidyverse')
+library('RColorBrewer')
 
 #Read it
 df <- read_csv("~/Documents/csv/incidents/incident_09012017.csv")
@@ -45,20 +46,24 @@ df_tally = df %>% group_by(resolved_month) %>% tally
 #basic stacked bar by month/category
 gg_Summary = ggplot(data = per_month_subs) + 
   geom_bar(mapping = aes(x = per_month_subs$resolved_month, y = per_month_subs$incidents, fill = per_month_subs$subcategory), stat = "identity") +
+  scale_fill_brewer(palette = "Set1") +
   labs(x = 'Month', y = "# Incidents", title = 'Monthly Incident Totals by Category', fill = 'Incident Type')
 
 gg_ytd_summary = ggplot(data = ytd_subs) +
   geom_bar(mapping = aes(x = reorder(ytd_subs$subcategory, ytd_subs$incidents), y = ytd_subs$incidents, fill = ytd_subs$subcategory), stat = "identity", show.legend = FALSE) +
+  scale_fill_brewer(palette = "Set1") +
   labs(x = '', y = '# Incidents', title = 'Incident Count YTD') +
   coord_flip()
 
 gg_ytd_attc = ggplot(data = ytd_subs) +
   geom_bar(mapping = aes(x = reorder(ytd_subs$subcategory, ytd_subs$incidents), y = ytd_subs$attch, fill = ytd_subs$subcategory), stat = "identity", show.legend = FALSE) +
+  scale_fill_brewer(palette = "Set1") +
   labs(x = '', y = 'Average Time to Close (Hours)', title = 'Average Time to Close YTD') +
   coord_flip() +
   scale_y_reverse()
 
 gg_ytd_tally = ggplot(data = df_tally, mapping = aes(x = resolved_month, y = n)) +
+  scale_fill_brewer(palette = "Set1") +
   geom_point(mapping = aes(stat = 'identity'))
   
 #stacked bar with trendlines for incident volume

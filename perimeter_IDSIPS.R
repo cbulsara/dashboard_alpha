@@ -45,7 +45,7 @@ df$kpi_name <- sapply(strsplit(df$kpi_name, split = ' - ', fixed = TRUE), functi
 
 #Generate the kpi_value:
 #+0.25 IDS Operational
-#+0.25 IPS Operational
+#+0.25 IPS Operational+25% 
 #+0.25 Devices in Support
 #+0.25 Events Tuned
 df$kpi_value <- as.integer('0')
@@ -53,7 +53,7 @@ df$kpi_value <- as.integer('0')
 
 #If the device is monitored by us, assume for now that it is not tuned and only providing IDS
 df$kpi_value <- ifelse(df$monitored_by == 'CUSTOMER' && df$device_health_status == 'OK', df$kpi_value + 0.25, df$kpi_value)
-df$kpi_value <- round(df$kpi_value,1)
+#df$kpi_value <- round(df$kpi_value,1)
 df$kpi_color <- 'black'
 df$kpi_color <- ifelse(df$kpi_value >= 0.95, 'green', df$kpi_color)
 df$kpi_color <- ifelse(df$kpi_value < 0.95, 'yellow', df$kpi_color)

@@ -2,6 +2,7 @@
 library('tidyverse')
 library('stringr')
 library('scales')
+library('RColorBrewer')
 
 #------------DECLARE VARIABLES
 csv_path <- '/home/cyrus/Documents/csv/siem/'
@@ -77,6 +78,7 @@ df_EP <- mutate(df_EP, destination = ifelse(Target_Destination == 'eventcollecto
 gg_SIEMError <-
   ggplot(data = df_Error,
          mapping = aes(x = Measure_Date, y = n, fill = Status)) +
+  scale_fill_brewer(palette = "Set1") +
   geom_bar(position = 'fill', stat = 'identity') +
   labs(
     x = 'Observation Date',
@@ -92,6 +94,7 @@ gg_SIEMError <-
 gg_SIEMEP <-
   ggplot(data = df_EP,
          mapping = aes(x = Measure_Date, y = sumeps, fill = destination)) +
+  scale_fill_brewer(palette = "Set1") +
   geom_bar(position = 'fill', stat = 'identity') +
   labs(
     x = 'Observation Date',

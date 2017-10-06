@@ -2,6 +2,7 @@
 library('tidyverse')
 library('stringr')
 library('scales')
+library('RColorBrewer')
 
 #------------DECLARE VARIABLES
 csv_path <- '/home/cyrus/Documents/csv/siem/'
