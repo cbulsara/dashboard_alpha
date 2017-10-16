@@ -49,10 +49,11 @@ df <-
     'malware'
   ))
 
+df <- mutate(df, hours = round(difftime(df$closed_at, df$sys_created_on, units = 'hours'),1))
 #------------CREATE SUMMARIES
 tasks_Means  <- df %>%
   group_by(type) %>%
-  summarize(n = n(), attch = round(mean(duration), 1))
+  summarize(n = n(), attch = round(mean(hours), 1))
 
 #Assign colors based on response time
 if (tasks_Means$attch <= 1) {

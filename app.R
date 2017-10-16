@@ -18,6 +18,7 @@ source("~/dashboard_alpha/siem_logsources.R")
 source("~/dashboard_alpha/siem_offenses.R")
 source("~/dashboard_alpha/certfeed.R")
 source("~/dashboard_alpha/phishingsim.R")
+source("~/dashboard_alpha/perimeter_IDSIPS.R")
 
 ui <- dashboardPage(
   skin = 'blue',
