@@ -46,8 +46,7 @@ df[cols_as_datetime] <-
 df_Error <-
   df %>% group_by(Measure_Date, Status) %>% summarize(n = n()) %>% mutate(p = n / sum(n))
 kpi_LogSourceErrorPercent <-
-  df_Error %>% filter(Measure_Date == toString(max(df_Error$Measure_Date))) %>% filter(Status ==
-                                                                                         'Error') %>% .$p
+  df_Error %>% filter(Measure_Date == toString(max(df_Error$Measure_Date))) %>% filter(Status == "Error") %>% .$p
 
 if (kpi_LogSourceErrorPercent <= 0.1)  {
   kpi_LogSourceErrorPercentColor <-  'green'

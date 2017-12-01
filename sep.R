@@ -8,7 +8,7 @@ library('formattable')
 
 #------------DECLARE VARIABLES
 csv_path <- '/home/cyrus/Documents/csv/sep/'
-csv_pattern <- '.csv'
+csv_pattern <- '*.csv'
 os_levels <- c(
   'UNKNOWN',
   'Windows XP Professional',
@@ -122,8 +122,8 @@ df <- mutate(
       Tamper_Protection_On == 'Enabled' &
       grepl('Enabled', Download_Insight_On) &
       Double_Version > 12170000000 &
-      Pattern_Age < 6 &
-      Scan_Age < 6,
+      Pattern_Age < 7 &
+      Scan_Age < 7,
     TRUE,
     FALSE
   )
@@ -131,7 +131,7 @@ df <- mutate(
 
 #Scan and Pattern Ages are compliant (TRUE) if they are less than 6 days old
 df <-
-  mutate(df, Scan_Compliant = ifelse(as.numeric(Scan_Age, units = 'days') < 6, TRUE, FALSE))
+  mutate(df, Scan_Compliant = ifelse(as.numeric(Scan_Age, units = 'days') < 7, TRUE, FALSE))
 df <-
   mutate(df, Pattern_Compliant = ifelse(as.numeric(Pattern_Age, units = 'days') < 6, TRUE, FALSE))
 

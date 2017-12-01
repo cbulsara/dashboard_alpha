@@ -1,9 +1,11 @@
 #Load libraries
 library('tidyverse')
 library('RColorBrewer')
+library('formattable')
+library('plotly')
 
 #Read it
-df <- read_csv("~/Documents/csv/incidents/incident_09012017.csv")
+df <- read_csv("~/Documents/csv/incidents/incident_11202017.csv")
 
 #Declare variables
 months <- c('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
@@ -37,7 +39,9 @@ per_month_subs$resolved_month <- parse_factor(per_month_subs$resolved_month, mon
 
 ytd_subs <- df %>% 
   group_by(resolved_year, subcategory) %>% 
-  summarize(incidents = n(), attch = round(mean(hours), 1), attcd = round(mean(days),1))
+  summarize(incidents = n(), attch = round(mean(hours), 1), attcd = round(mean(days),1)) %>% 
+  mutate(percent = incidents/sum(incidents)) %>%
+  mutate(pos = cumsum(ytd_subs$percent) - ytd_subs$percent/3)
 
 df_tally = df %>% group_by(resolved_month) %>% tally
 
@@ -51,9 +55,30 @@ gg_Summary = ggplot(data = per_month_subs) +
 
 gg_ytd_summary = ggplot(data = ytd_subs) +
   geom_bar(mapping = aes(x = reorder(ytd_subs$subcategory, ytd_subs$incidents), y = ytd_subs$incidents, fill = ytd_subs$subcategory), stat = "identity", show.legend = FALSE) +
+  geom_text(mapping = aes(x = reorder(ytd_subs$subcategory, ytd_subs$incidents), y = ytd_subs$incidents, fill = ytd_subs$subcategory, label = ytd_subs$incidents), nudge_y = 3) +
   scale_fill_brewer(palette = "Set1") +
   labs(x = '', y = '# Incidents', title = 'Incident Count YTD') +
   coord_flip()
+
+gg_ytd_pie = ggplot(data = ytd_subs) +
+  geom_bar(mapping = aes(x = '', y = ytd_subs$percent, fill = ytd_subs$subcategory), stat = "identity", show.legend = FALSE, width = 1) +
+  geom_text(mapping = aes(x = 1.2, y = ytd_subs$pos, fill = ytd_subs$subcategory, label = percent(ytd_subs$percent))) +
+  scale_fill_brewer(palette = "Set1") +
+  ylab('') +
+  xlab('') +
+  labs(fill = percent(ytd_subs$percent)) +
+  coord_polar(theta='y')
+
+py_ytd_pie <- plot_ly(ytd_subs, labels = ytd_subs$subcategory, values = round(ytd_subs$percent, 2), type = 'pie',
+                      textposition = 'inside',
+                      textinfo = 'label+percent',
+                      insidetextfont = list(color = '#FFFFFF', size = 30),
+                      marker = list(colors = colors,
+                                    line = list(color = '#FFFFFF', width = 1))) %>%
+              layout(title = 'Incident Breakdown by Percentage of Total Year-To-Date',
+                     xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                     yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
 
 gg_ytd_attc = ggplot(data = ytd_subs) +
   geom_bar(mapping = aes(x = reorder(ytd_subs$subcategory, ytd_subs$incidents), y = ytd_subs$attch, fill = ytd_subs$subcategory), stat = "identity", show.legend = FALSE) +
