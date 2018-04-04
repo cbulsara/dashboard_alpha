@@ -26,9 +26,9 @@ df <- mutate(df, hours = round(calendar_duration / 3600, 1), days = round(calend
 df <- mutate(df, opened_month = format(opened_at, "%b"))
 df <- mutate(df, resolved_month = format(resolved_at, "%b"))
 df$resolved_month <- parse_factor(df$resolved_month,
-            months,
-             ordered = TRUE,
-             include_na = TRUE)
+                                  months,
+                                  ordered = TRUE,
+                                  include_na = TRUE)
 df <- mutate(df, resolved_year = format(resolved_at, "%Y"))
 
 #Create summaries
@@ -41,7 +41,7 @@ ytd_subs <- df %>%
   group_by(resolved_year, subcategory) %>% 
   summarize(incidents = n(), attch = round(mean(hours), 1), attcd = round(mean(days),1)) %>% 
   mutate(percent = incidents/sum(incidents)) %>%
-  mutate(pos = cumsum(ytd_subs$percent) - ytd_subs$percent/3)
+  mutate(pos = cumsum(incidents/sum(incidents)) - (incidents/sum(incidents))/3)
 
 df_tally = df %>% group_by(resolved_month) %>% tally
 
@@ -75,9 +75,9 @@ py_ytd_pie <- plot_ly(ytd_subs, labels = ytd_subs$subcategory, values = round(yt
                       insidetextfont = list(color = '#FFFFFF', size = 30),
                       marker = list(colors = colors,
                                     line = list(color = '#FFFFFF', width = 1))) %>%
-              layout(title = 'Incident Breakdown by Percentage of Total Year-To-Date',
-                     xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
-                     yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+  layout(title = 'Incident Breakdown by Percentage of Total Year-To-Date',
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
 
 
 gg_ytd_attc = ggplot(data = ytd_subs) +
@@ -90,7 +90,7 @@ gg_ytd_attc = ggplot(data = ytd_subs) +
 gg_ytd_tally = ggplot(data = df_tally, mapping = aes(x = resolved_month, y = n)) +
   scale_fill_brewer(palette = "Set1") +
   geom_point(mapping = aes(stat = 'identity'))
-  
+
 #stacked bar with trendlines for incident volume
 #remove method = 'lm' for less smoothyness
 #remove se = FALSE for error bar
