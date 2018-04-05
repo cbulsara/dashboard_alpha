@@ -5,9 +5,12 @@ library('RColorBrewer')
 library('sparkline')
 library('formattable')
 
+
+source("~/Documents/dashboard_alpha/discovery.R")
+
 #------------DECLARE VARIABLES
 csv_path <- '/home/cyrus/Documents/csv/vms/'
-csv_pattern <- '.csv'
+csv_pattern <- 'Vulnerability_All_CriticalHigh.csv'
 
 cols_as_factor <- c(
   'plugin_name',
@@ -32,7 +35,7 @@ cols_as_datetime <- c(
 csv_in <-
   list.files(path = csv_path,
              pattern = csv_pattern,
-             full.name = TRUE)
+             full.name = TRUE,)
 df <- do.call(rbind, lapply(csv_in, function(x)
   as.tibble(read.table(x, sep=",", header=TRUE))))
 
@@ -64,6 +67,11 @@ df[cols_as_datetime] <-
 df <- mutate(df, exploitable = (grepl("Exploits are available", exploit_ease, fixed=TRUE) | grepl("No exploit is required", exploit_ease, fixed=TRUE)))
 df <- mutate(df, config_issue = is.na(exploit_ease))
 
-df_exec <- df %>% group_by(severity, exploitable) %>% summarize(n = n()) %>% mutate(p = n / sum(n))
-
+df_exec <- df %>% group_by(repository, exploitable) %>% dplyr::summarize(n_vulnerabilities = n()) %>% mutate
+df_merge <- merge(df_exec, df_summary, by='repository', all.x=TRUE)
+df_dedupe <- df[!duplicated(df$ip_address),]
+df_dedupe_summary <- df_dedupe %>% group_by(repository, exploitable) %>% dplyr::summarize(unique_assets = n())
+df_dedupe_summary <- merge(df_dedupe_summary, df_summary, by='repository', all.x=TRUE)
+df_dedupe_summary <- df_dedupe_summary %>% mutate(ptotal = unique_assets / total)
+df_join <- inner_join(df_dedupe_summary, df_merge)
 
