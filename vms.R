@@ -77,6 +77,17 @@ df_dedupe_summary <- merge(df_dedupe_summary, df_summary, by='repository', all.x
 df_dedupe_summary <- df_dedupe_summary %>% mutate(ptotal = unique_assets / total)
 df_join <- inner_join(df_dedupe_summary, df_merge)
 
+df_remediation <- df %>% group_by(plugin_name) %>% filter(exploit_ease == 'No exploit is required' | exploit_ease == 'Exploits are available' | is.na(exploit_ease))
+df_remediation <- subset(df_remediation, select=c('plugin', 'plugin_name','synopsis', 'severity', 'cve', 'ip_address', 'dns_name', 'netbios_name'))
+
+#-------------------------Generate Remediation CSVs
+for (p in unique(df_remediation$plugin)) {
+  df_rm <- df_remediation %>% filter(plugin == p)
+  path <-'/home/cyrus/Documents/csv/vms/remediation/'
+  filename <- paste(df_rm[1,]$plugin, "_", df_rm[1,]$severity, ".csv", sep = "")
+  write.csv(df_rm, file = paste(path, filename, sep = ""))
+}
+
 #-------------------------Create plots
 
 #Stacked bar, exploitable vs non by Repository
@@ -120,7 +131,6 @@ p_VulnPercent <- plot_ly(piedata,
                 layout(title = pietitle)
 
 #Map of sites
-
 lats <- c(32.887329, 33.455256, 32.810284)
 lons <- c(-117.223650,-111.976237, -117.121274)
 df_location <- data.frame(repos, exp_assets, lats, lons)
