@@ -5,8 +5,11 @@ library('RColorBrewer')
 library('sparkline')
 library('formattable')
 library('plotly')
+library('leaflet')
 
-source("~/Documents/dashboard_alpha/discovery.R")
+#Sys.setenv('MAPBOX_TOKEN' = 'pk.eyJ1IjoiY2J1bHNhcmEiLCJhIjoiY2pmbXJ1emMxMGUxZDMzbXlkNnk0cHQzbSJ9.o3nHky3cH7VeadRQilaWVA')
+
+source("~/dashboard_alpha/discovery.R")
 
 #------------DECLARE VARIABLES
 csv_path <- '/home/cyrus/Documents/csv/vms/'
@@ -32,7 +35,7 @@ cols_as_datetime <- c(
 csv_in <-
   list.files(path = csv_path,
              pattern = csv_pattern,
-             full.name = TRUE,)
+             full.name = TRUE)
 df <- do.call(rbind, lapply(csv_in, function(x)
   as.tibble(read.table(x, sep=",", header=TRUE))))
 
@@ -79,6 +82,7 @@ df_join <- inner_join(df_dedupe_summary, df_merge)
 repos <- unique(df_join$repository)
 non_exp <- df_join[df_join$exploitable=='FALSE',]$n_vulnerabilities
 exp <- df_join[df_join$exploitable=='TRUE',]$n_vulnerabilities
+sum_vulns <- exp + non_exp
 df_vuln <- data.frame (repos, exp, non_exp)
 p_VulnsbySite <-plot_ly(df_vuln, 
                   x=~repos, y=~exp, 
@@ -113,5 +117,15 @@ p_VulnPercent <- plot_ly(piedata,
                           hoverinfo='text',
                           text=~paste(exp_assets, "assets")) %>%
                 layout(title = pietitle)
+
+#Map of sites
+
+lats <- c(32.887329, 33.455256, 32.810284)
+lons <- c(-117.223650,-111.976237, -117.121274)
+df_location <- data.frame(repos, exp_assets, lats, lons)
+m <- leaflet (data=df_location)
+m <- m %>% addTiles(group = "OSM (default)") %>%
+  addProviderTiles(providers$Stamen.Toner, group = "Toner") %>% addCircleMarkers(~lons, ~lats, popup = ~paste(repos, exp_assets), color = 'red', radius = ~exp_assets/10)
+
 
   
