@@ -6,6 +6,7 @@ library('sparkline')
 library('formattable')
 library('plotly')
 library('leaflet')
+library('htmltools')
 
 #Sys.setenv('MAPBOX_TOKEN' = 'pk.eyJ1IjoiY2J1bHNhcmEiLCJhIjoiY2pmbXJ1emMxMGUxZDMzbXlkNnk0cHQzbSJ9.o3nHky3cH7VeadRQilaWVA')
 
@@ -123,9 +124,10 @@ p_VulnPercent <- plot_ly(piedata,
 lats <- c(32.887329, 33.455256, 32.810284)
 lons <- c(-117.223650,-111.976237, -117.121274)
 df_location <- data.frame(repos, exp_assets, lats, lons)
+m_label <- paste("Site:", df_location$repos, "<br/>", "Vulnerable Assets:", df_location$exp_assets, sep = " ") %>% lapply(htmltools::HTML) 
 m <- leaflet (data=df_location)
 m <- m %>% addTiles(group = "OSM (default)") %>%
-  addProviderTiles(providers$Stamen.Toner, group = "Toner") %>% addCircleMarkers(~lons, ~lats, popup = ~paste(repos, exp_assets), color = 'red', radius = ~exp_assets/10)
+  addProviderTiles(providers$Stamen.Toner, group = "Toner") %>% addCircleMarkers(~lons, ~lats, label = m_label, color = 'red', radius = ~exp_assets/10)
 
 
   
