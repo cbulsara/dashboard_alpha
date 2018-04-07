@@ -69,7 +69,8 @@ df <- mutate(df, exploitable = (grepl("Exploits are available", exploit_ease, fi
 df <- mutate(df, config_issue = is.na(exploit_ease))
 
 #-------------------------Create Summaries
-df_exec <- df %>% group_by(repository, exploitable) %>% dplyr::summarize(n_vulnerabilities = n()) %>% mutate
+df_severity <- df %>% group_by(repository, severity) %>% summarize(n_vulnerabilities= n())
+df_exec <- df %>% group_by(repository, exploitable) %>% dplyr::summarize(n_vulnerabilities = n()) 
 df_merge <- merge(df_exec, df_summary, by='repository', all.x=TRUE)
 df_dedupe <- df[!duplicated(df$ip_address),]
 df_dedupe_summary <- df_dedupe %>% group_by(repository, exploitable) %>% dplyr::summarize(unique_assets = n())
@@ -107,6 +108,25 @@ p_VulnsbySite <-plot_ly(df_vuln,
                   xaxis = list(title = 'Site'), 
                   yaxis = list(title = '# of Vulnerabilities'), 
                   barmode = 'stack')
+
+#Stacked bar, Critical vs High by Repository
+#re-use repos
+#repos <- unique(df_join$repository)
+crit <- df_severity[df_severity$severity=='Critical',]$n_vulnerabilities
+high <- df_severity[df_severity$severity=='High',]$n_vulnerabilities
+df_sev <- data.frame(repos, crit, high)
+p_SevbySite <-plot_ly(df_severity, 
+                        x=~repos, y=~high, 
+                        type = 'bar', 
+                        text = ~high, textposition = 'auto', 
+                        name = 'High Risk') %>% 
+              add_trace(y = ~crit, text = ~crit, 
+                        name = 'Critical') %>% 
+              layout (title = "Severity By Site", 
+                        xaxis = list(title = 'Site'), 
+                        yaxis = list(title = '# of Vulnerabilities'), 
+                        barmode = 'stack')
+
 
 #Pie chart, assets affected by Critical and High vulnerabilities
 #re-use repos from p_VulnsbySite
