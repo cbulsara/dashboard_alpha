@@ -82,8 +82,8 @@ df_nbymonth <- df %>%
                 p = n_pos/closed)
 
 #-------------------------Plot
-p <- plot_ly(df_nbymonth, x=~month, y=~n, type = 'scatter', mode = 'lines', name = 'Total Incidents Opened') %>%
+p <- plot_ly(df_nbymonth, x=~month, y=~n, type = 'scatter', mode = 'lines', name = 'Total Incidents Opened', connectgaps=TRUE) %>%
             add_trace(y = ~open, name = 'In Progress', type = 'bar', barmode = 'stack') %>%
             add_trace(y = ~closed, name = 'Closed', type = 'bar', barmode = 'stack') %>%
-            add_trace(y = ~n_neg, name = 'False Positives')
+            add_trace(y = ~n_neg, line=list(dash='dash'), name = 'False Positives', connectgaps=TRUE)
 
